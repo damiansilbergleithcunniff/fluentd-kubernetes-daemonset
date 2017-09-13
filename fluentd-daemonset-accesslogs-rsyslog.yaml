@@ -20,7 +20,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: damiansilbergleithcunniff/fluentd:accesslogs-stdout
+        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v1.0
         env:
           # === Kubernetes Host Config ======
           - name: KUBERNETES_SERVICE_HOST
@@ -37,7 +37,7 @@ spec:
             value: /var/log/containers/wp-cache*.log
           # === Logging Envelope Server Vars ======
           - name:  LOG_ENVELOPE_DATACENTER
-            value: status.hostIP
+            value: ""
           - name:  LOG_ENVELOPE_ENVIRONMENT
             value: ""
           - name:  LOG_ENVELOPE_HOST
