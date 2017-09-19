@@ -29,26 +29,53 @@ spec:
             value: "443"
           # === RSYSLOG Config ======
           - name:  FLUENT_RSYSLOG_HOST
-            value: status.hostIP
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: rsyslog.host
           - name:  FLUENT_RSYSLOG_PORT
-            value: "514"
+            valueFrom: 
+              configMapKeyRef:
+                name: fluent-config
+                key: rsyslog.port
           # === Log Source Path ======
           - name:  LOG_SOURCE_PATH
-            value: /var/log/containers/wp-cache*.log
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logsource.path
           # === Logging Envelope Server Vars ======
           - name:  LOG_ENVELOPE_DATACENTER
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.datacenter
           - name:  LOG_ENVELOPE_ENVIRONMENT
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.environment
           - name:  LOG_ENVELOPE_HOST
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.host
           # === Logging Envelope Message Vars ======
           - name:  LOG_ENVELOPE_BRANDID
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.brandid
           - name:  LOG_ENVELOPE_ROLE
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.role
           - name:  LOG_ENVELOPE_TYPE
-            value: ""
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logenvelope.type
         resources:
           limits:
             memory: 200Mi
