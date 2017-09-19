@@ -20,7 +20,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v1.0
+        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v0.1
         env:
           # === Kubernetes Host Config ======
           - name: KUBERNETES_SERVICE_HOST
@@ -34,7 +34,7 @@ spec:
                 name: fluent-config
                 key: rsyslog.host
           - name:  FLUENT_RSYSLOG_PORT
-            valueFrom: 
+            valueFrom:
               configMapKeyRef:
                 name: fluent-config
                 key: rsyslog.port
