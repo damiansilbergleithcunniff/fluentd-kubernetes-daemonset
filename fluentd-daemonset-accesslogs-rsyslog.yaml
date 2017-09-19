@@ -44,6 +44,11 @@ spec:
               configMapKeyRef:
                 name: fluent-config
                 key: logsource.path
+          - name:  LOG_SOURCE_POSFILE
+            valueFrom:
+              configMapKeyRef:
+                name: fluent-config
+                key: logsource.posfile
           # === Logging Envelope Server Vars ======
           - name:  LOG_ENVELOPE_DATACENTER
             valueFrom:
