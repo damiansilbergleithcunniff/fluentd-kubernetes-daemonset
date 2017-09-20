@@ -1,3 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-config-map
+  namespace: kube-system
+data:
+  fluent.conf: |
+    @include kubernetes.conf
+
+    <match **>
+      type remote_syslog
+      host p3dlafwrkr0001.cloud.phx3.gdg
+      port 514
+      severity info
+      tag fluentd
+    </match>
+  kubernetes.conf: |
+    <match fluent.**>
+      type null
+    </match>
+
+    <source>
+      type tail
+      path /var/log/containers/wp-cache*.log
+      pos_file /var/log/fluentd-containers.log.pos
+      time_format %Y-%m-%dT%H:%M:%S.%NZ
+      keep_time_key true
+      tag kubernetes.*
+      format json
+      read_from_head true
+    </source>
+
+    <filter kubernetes.**>
+      type kubernetes_metadata
+    </filter>
+
+
+    <filter kubernetes.**>
+      type record_transformer
+      enable_ruby true
+      auto_typecast true
+      <record>
+       brand_id ${nil}
+       data: ${{"container_name" => kubernetes["container_name"], "pod_namespace" => kubernetes["namespace_name"], "pod_name" => kubernetes["pod_name"], "siteid" => kubernetes["pod_name"].gsub(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,'\1'), "message" => record["log"]}}
+       datacenter "A2"
+       envelope_version "1.2.1"
+       environment "PROD"
+       # Hostname has to be filled in dynamically
+       host ${{"hostname" => ""}}
+       role "BUSINESS_ANALYTICS"
+       timestamp ${record["time"]}
+       type mwp2-kubernetes-accesslogs
+      </record>
+      remove_keys log,attrs,stream,kubernetes,docker,time
+    </filter>
+
+---
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
@@ -20,67 +77,12 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v0.1
+        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v0.2
         env:
-          # === Kubernetes Host Config ======
           - name: KUBERNETES_SERVICE_HOST
             value: kubernetes.default
           - name: KUBERNETES_SERVICE_PORT
             value: "443"
-          # === RSYSLOG Config ======
-          - name:  FLUENT_RSYSLOG_HOST
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: rsyslog.host
-          - name:  FLUENT_RSYSLOG_PORT
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: rsyslog.port
-          # === Log Source Path ======
-          - name:  LOG_SOURCE_PATH
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logsource.path
-          - name:  LOG_SOURCE_POSFILE
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logsource.posfile
-          # === Logging Envelope Server Vars ======
-          - name:  LOG_ENVELOPE_DATACENTER
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.datacenter
-          - name:  LOG_ENVELOPE_ENVIRONMENT
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.environment
-          - name:  LOG_ENVELOPE_HOST
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.host
-          # === Logging Envelope Message Vars ======
-          - name:  LOG_ENVELOPE_BRANDID
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.brandid
-          - name:  LOG_ENVELOPE_ROLE
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.role
-          - name:  LOG_ENVELOPE_TYPE
-            valueFrom:
-              configMapKeyRef:
-                name: fluent-config
-                key: logenvelope.type
         resources:
           limits:
             memory: 200Mi
@@ -88,6 +90,9 @@ spec:
             cpu: 100m
             memory: 200Mi
         volumeMounts:
+        - name: fluent-configs
+          mountPath: /fluentd/etc/
+          readOnly: true
         - name: varlogcontainers
           mountPath: /var/log/containers
         - name: varlogpods
@@ -97,6 +102,9 @@ spec:
           readOnly: true
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: fluent-configs
+        configMap:
+          name: fluent-config-map
       - name: varlogcontainers
         hostPath:
           path: /var/log/containers
