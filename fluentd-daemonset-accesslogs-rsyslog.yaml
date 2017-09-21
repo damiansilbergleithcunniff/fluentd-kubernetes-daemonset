@@ -18,7 +18,7 @@ data:
       severity info
       facility local0
       tag_key type
-      hostname test_host4
+      hostname test_host5
     </match>
 
     <match **>
@@ -50,16 +50,13 @@ data:
       enable_ruby true
       auto_typecast true
       <record>
-       brand_id ${nil}
-       data: ${{"container_name" => kubernetes["container_name"], "pod_namespace" => kubernetes["namespace_name"], "pod_name" => kubernetes["pod_name"], "siteid" => kubernetes["pod_name"].gsub(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,'\1'), "message" => record["log"]}}
-       datacenter "A2"
-       envelope_version "1.2.1"
-       environment "PROD"
-       # Hostname has to be filled in dynamically
-       host ${{"hostname" => ""}}
-       role "BUSINESS_ANALYTICS"
+       pod_namespace ${kubernetes["namespace_name"]}
+       container_name ${kubernetes["container_name"]}
+       pod_name ${kubernetes["pod_name"]}
+       siteid ${kubernetes["pod_name"].gsub(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,'\1')}
+       message ${record["log"]}
        timestamp ${record["time"]}
-       type mwp2-kubernetes-accesslogs
+       type mwp2-accesslogs
       </record>
       remove_keys log,attrs,stream,kubernetes,docker,time
     </filter>
