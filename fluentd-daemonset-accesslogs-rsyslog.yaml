@@ -7,12 +7,22 @@ data:
   fluent.conf: |
     @include kubernetes.conf
 
+    <system>
+      log_level debug
+    </system>
+
     <match **>
-      type remote_syslog
-      host p3dlafwrkr0001.cloud.phx3.gdg
+      type syslog_buffered
+      remote_syslog 10.195.192.9
       port 514
       severity info
-      tag fluentd
+      facility local0
+      tag_key type
+      hostname test_host4
+    </match>
+
+    <match **>
+      type stdout
     </match>
   kubernetes.conf: |
     <match fluent.**>
@@ -77,7 +87,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: fluentd
-        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v0.2
+        image: damiansilbergleithcunniff/fluentd:accesslogs-rsyslog-v0.19
         env:
           - name: KUBERNETES_SERVICE_HOST
             value: kubernetes.default
