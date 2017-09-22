@@ -17,7 +17,7 @@ data:
       port 514
       severity info
       facility local0
-      tag_key type
+      tag_key product
       hostname KUBERETES_NODE_NAME
       cee_record true
     </match>
@@ -51,13 +51,17 @@ data:
       enable_ruby true
       auto_typecast true
       <record>
-       pod_namespace ${kubernetes["namespace_name"]}
-       container_name ${kubernetes["container_name"]}
-       pod_name ${kubernetes["pod_name"]}
-       siteid ${kubernetes["pod_name"].gsub(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,'\1')}
-       message ${record["log"]}
+       brand_id ${nil}
+       data_schema mwp2_accesslog_1.0.0
+       data ${{"container_name" => kubernetes["container_name"], "pod_namespace" => kubernetes["namespace_name"], "pod_name" => kubernetes["pod_name"], "siteid" => kubernetes["pod_name"].gsub(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,'\1'), "message" => record["log"]}}
+       datacenter A2
+       envelope_version 2.0.0
+       environment PROD
+       host ${{"hostname" => "KUBERETES_NODE_NAME"}}
+       role BUSINESS_ANALYTICS
        timestamp ${record["time"]}
-       type mwp2-accesslogs
+       product mwp2
+       sub_product accesslogs
       </record>
       remove_keys log,attrs,stream,kubernetes,docker,time
     </filter>
