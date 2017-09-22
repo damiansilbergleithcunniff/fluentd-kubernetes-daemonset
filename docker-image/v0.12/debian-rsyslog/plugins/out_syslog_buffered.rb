@@ -16,6 +16,7 @@ module Fluent
     config_param :severity, :string, :default => 'debug'
     config_param :use_record, :string, :default => nil
     config_param :payload_key, :string, :default => 'message'
+    config_param :cee_record, :string, :default => nil
 
 
     def initialize
@@ -23,7 +24,6 @@ module Fluent
       require 'socket'
       require 'syslog_protocol'
       require 'timeout'
-      require 'yaml'
     end
 
     def configure(conf)
@@ -39,6 +39,7 @@ module Fluent
       @facilty = conf['facility']
       @severity = conf['severity']
       @use_record = conf['use_record']
+      @cee_record = conf['cee_record']
       @payload_key = conf['payload_key']
       if not @payload_key
         @payload_key = "message"
@@ -82,7 +83,6 @@ module Fluent
 
 
     def write(chunk)
-      log.info "out:syslog: chunk: #{chunk.to_json}"
       chunk.msgpack_each {|(tag,time,record)|
             send_to_syslog(tag, time, record)
           }
@@ -101,7 +101,7 @@ module Fluent
       if record['time']
         time = Time.parse(record['time'])
       else
-        time = Time.now.utc
+        time = Time.now
       end
       @packet.time = time
       @packet.tag      = if tag_key
@@ -110,10 +110,11 @@ module Fluent
                            tag[0..31] # tag is trimmed to 32 chars for syslog_protocol gem compatibility
                          end
       packet = @packet.dup
-      #packet.content = record[@payload_key]
-      packet.content = "@cee:" + record.to_json
-      log.info "out:syslog: record: #{record.to_json}"
-      log.info "out:syslog: packet.content: #{packet.content}"
+      if @cee_record
+        packet.content = "@cee:" + record.to_json
+      else
+        packet.content = record[@payload_key]
+      end
       begin
         if not @socket
           @socket = create_tcp_socket(@remote_syslog, @port)
@@ -122,7 +123,6 @@ module Fluent
           begin
             @socket.write packet.assemble + "\n"
             @socket.flush
-            log.info "out:syslog: flushed socket: #{@packet.inspect}"
           rescue SocketError, Errno::ECONNREFUSED, Errno::ECONNRESET, Errno::EPIPE, Timeout::Error, OpenSSL::SSL::SSLError => e
             log.warn "out:syslog: connection error by #{@remote_syslog}:#{@port} :#{e}"
             @socket = nil
